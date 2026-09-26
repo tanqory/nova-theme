@@ -16,8 +16,15 @@ export {
   hasDecided,
   setBannerRequired,
   isBannerRequired,
+  setConsentMode,
+  holdConsentClosed,
+  isConsentArmed,
+  onConsentModeChange,
+  getConsentMode,
+  consentModeFromShop,
   onConsentChange,
   type Consent,
+  type ConsentMode,
 } from './consent'
 export { defineTheme, defineSettings, type ThemeConfig, type SettingsSchema } from './config'
 export { ThemeProvider, useSettings, useT } from './theme-context'

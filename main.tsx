@@ -17,12 +17,14 @@ import {
   createMockData,
   createAnalytics,
   hasConsent,
-  setBannerRequired,
+  setConsentMode,
+  consentModeFromShop,
   type DataApi,
   type LiveDataOptions,
   type MountOptions,
 } from './lib/tanqory/index'
 import { apiBase } from './lib/api-base'
+import { createSsgConsentGate } from './lib/tanqory/ssg-consent-gate'
 import { applyHead, computeHead, headFrom, shopNameOf } from './lib/head'
 import { emitRoute } from './lib/route-analytics'
 import {
@@ -284,10 +286,10 @@ if (VITE_TANQORY_BACKEND && VITE_TANQORY_STORE_ID && !isEditorPreview()) {
 }
 
 /** Set the consent gate from shop data BEFORE the first pageViewed, so a store
- *  with the cookie banner enabled doesn't emit until the shopper has consented. */
+ *  whose buyer needs consent first doesn't emit until the shopper has consented. */
 function armConsent(data: DataApi): void {
-  const cb = (data.shop as { cookieBanner?: { enabled?: boolean } } | undefined)?.cookieBanner
-  setBannerRequired(Boolean(cb?.enabled))
+  // The SERVER's per-buyer verdict (jurisdiction + merchant toggle); missing/unknown ⇒ OPT_IN, never permissive.
+  setConsentMode(consentModeFromShop(data.shop))
 }
 
 /** Emit the route events for the CURRENT url. Thin wrapper so both the boot
@@ -318,19 +320,22 @@ if (
     locale: localeHeader(),
   }
   const data = createLiveDataFromSnapshot(ssgState.bootstrap, liveOpts)
+  // CONSENT: the snapshot was built for the BUILD machine's location and must never decide a buyer's consent (S8 #2549
+  // B-1). Everything stays closed (OPT_IN) and nothing is emitted until the LIVE per-request answer arrives.
+  const consentGate = createSsgConsentGate(emitRouteEvents)
   mount({
     ...baseMountOptions(data),
     revalidate: async () => {
       try {
-        return await createLiveData({ ...liveOpts, ...detailHandles(window.location.pathname) })
+        const live = await createLiveData({ ...liveOpts, ...detailHandles(window.location.pathname) })
+        consentGate.onLive(live)
+        return live
       } catch {
-        return null // keep the snapshot data — a failed refresh must not blank the page
+        return null // keep the snapshot data — a failed refresh must not blank the page (consent stays closed)
       }
     },
   })
   applyHead(computeHead(window.location.pathname, data, settings))
-  armConsent(data)
-  emitRouteEvents(data)
 } else {
   // No usable snapshot (mock build, or this route isn't the prerendered page).
   // Fetch first, then CLIENT-render: any SSG markup in #root belongs to a

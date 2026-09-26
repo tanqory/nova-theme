@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react'
-import { useData, setConsent, setBannerRequired, hasDecided, useT } from '../lib/tanqory/index'
+import {
+  useData,
+  setConsent,
+  getConsentMode,
+  isConsentArmed,
+  onConsentModeChange,
+  hasDecided,
+  useT,
+} from '../lib/tanqory/index'
 import { Link } from './Link'
 
 interface BannerConfig {
@@ -14,8 +22,10 @@ interface BannerConfig {
 }
 
 /**
- * Cookie-consent banner — shown site-wide when the merchant enables it in
- * Settings → Customer privacy. Renders the merchant's configured copy/labels/
+ * Cookie-consent banner — shown site-wide when the shopper's jurisdiction requires
+ * it (EU/UK/CH/BR/TH/Quebec, unknown location → consent first; US opt-out states →
+ * notice + opt-out) or the merchant enables it in Settings → Customer privacy; the
+ * server folds both into `cookieBanner.mode` (journey-matrix 0.5). Renders the merchant's configured copy/labels/
  * position/theme (not hardcoded) and ENFORCES the choice: Accept/Decline/Manage
  * write the consent state that TrackingPixels + analytics gate on. Lives in the
  * layout Shell, so it wraps every page.
@@ -24,17 +34,25 @@ export function CookieConsent(): JSX.Element | null {
   const t = useT()
   const { shop } = useData()
   const cfg = ((shop as { cookieBanner?: BannerConfig })?.cookieBanner ?? {}) as BannerConfig
-  const enabled = Boolean(cfg.enabled)
+  // READ-ONLY view of the gate (S8 C-1). The mode is set ONLY by an authoritative LIVE verdict (`createSsgConsentGate.onLive`
+  // on the SSG boot, `armConsent` on the live boot) — never from the `useData().shop` this component renders with, which on
+  // the SSG boot is the build-time snapshot. Until armed the gate is closed and no banner is shown.
+  const [, bump] = useState(0)
+  useEffect(() => onConsentModeChange(() => bump((n) => n + 1)), [])
+  const mode = getConsentMode()
+  const enabled = Boolean(shop) && isConsentArmed() && mode !== 'NONE'
   const [show, setShow] = useState(false)
   const [managing, setManaging] = useState(false)
-  const [analytics, setAnalytics] = useState(true)
-  const [marketing, setMarketing] = useState(true)
+  // Under consent-first law a pre-ticked box is not consent — start unticked.
+  const [analytics, setAnalytics] = useState(false)
+  const [marketing, setMarketing] = useState(false)
 
   useEffect(() => {
-    // Tell the consent layer whether a banner is in effect (this gates tracking).
-    setBannerRequired(enabled)
-    if (enabled && !hasDecided()) setShow(true)
-  }, [enabled])
+    if (!enabled) return
+    setAnalytics(mode === 'OPT_OUT')
+    setMarketing(mode === 'OPT_OUT')
+    if (!hasDecided()) setShow(true)
+  }, [enabled, mode])
 
   if (!enabled || !show) return null
 

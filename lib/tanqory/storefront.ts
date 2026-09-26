@@ -237,7 +237,10 @@ export interface Shop {
   }
   /** Cookie-consent banner config (Settings → Customer privacy). */
   cookieBanner?: {
+    /** EFFECTIVE requirement for THIS shopper (jurisdiction ∨ merchant toggle). */
     enabled: boolean
+    /** 'OPT_IN' | 'OPT_OUT' | 'NONE' — the server's per-buyer consent regime (journey-matrix 0.5). */
+    mode?: string | null
     dataSharingTitle?: string | null
     dataSharingVisible?: boolean
     title?: string | null
@@ -744,6 +747,7 @@ function normalizeShop(n: any): Shop | null {
     cookieBanner: n.cookieBanner
       ? {
           enabled: Boolean(n.cookieBanner.enabled),
+          mode: n.cookieBanner.mode ?? null,
           dataSharingTitle: n.cookieBanner.dataSharingTitle ?? null,
           dataSharingVisible: n.cookieBanner.dataSharingVisible !== false,
           title: n.cookieBanner.title ?? null,
@@ -813,7 +817,7 @@ export const BOOTSTRAP_SHOP_MENU = /* GraphQL */ `
     termsOfService { handle title url }
     shippingPolicy { handle title url }
     subscriptionPolicy { handle title url }
-    cookieBanner { enabled dataSharingTitle dataSharingVisible title body acceptLabel declineLabel manageLabel position colorTheme }
+    cookieBanner { enabled mode dataSharingTitle dataSharingVisible title body acceptLabel declineLabel manageLabel position colorTheme }
     primaryDomain { host url sslEnabled }
     paymentSettings { acceptedCardBrands supportedDigitalWallets currencyCode }
   }
