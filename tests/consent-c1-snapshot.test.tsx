@@ -78,3 +78,68 @@ describe('C-1: the snapshot never opens the gate through CookieConsent', () => {
     expect(src).not.toMatch(/setConsentMode\(/)
   })
 })
+
+/**
+ * B-2 (S8b, checkout consent-capture review) — apps/checkouts reuses this localStorage decision
+ * without re-asking, on the assumption it was only ever written by an explicit click. Proven here at
+ * runtime (mount alone writes nothing; a click writes exactly the clicked choice), not just cited —
+ * and by a static source scan pinning `setConsent(` to exactly the three button handlers, so a future
+ * edit that adds a fourth call site (e.g. an effect that "helpfully" defaults a choice) fails loudly.
+ */
+describe('B-2: setConsent is written ONLY by an explicit Accept/Decline/Save click', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setConsentMode('OPT_IN')
+  })
+
+  it('mounting the banner — with no click — writes nothing to localStorage', async () => {
+    const { unmount, settle } = await renderSection(<CookieConsent />, shopWith({ enabled: true, mode: 'OPT_IN' }))
+    await settle()
+    expect(localStorage.getItem('tq-cookie-consent')).toBeNull()
+    unmount()
+  })
+
+  it('Decline writes exactly {analytics:false, marketing:false} — no earlier write to overwrite', async () => {
+    const { container, unmount, settle } = await renderSection(<CookieConsent />, shopWith({ enabled: true, mode: 'OPT_IN' }))
+    await settle()
+    const declineBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Decline')
+    expect(declineBtn).toBeTruthy()
+    act(() => declineBtn!.click())
+    expect(JSON.parse(localStorage.getItem('tq-cookie-consent') || 'null')).toEqual({
+      analytics: false,
+      marketing: false,
+    })
+    unmount()
+  })
+
+  it('Accept writes exactly {analytics:true, marketing:true}', async () => {
+    const { container, unmount, settle } = await renderSection(<CookieConsent />, shopWith({ enabled: true, mode: 'OPT_IN' }))
+    await settle()
+    const acceptBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Accept')
+    act(() => acceptBtn!.click())
+    expect(JSON.parse(localStorage.getItem('tq-cookie-consent') || 'null')).toEqual({
+      analytics: true,
+      marketing: true,
+    })
+    unmount()
+  })
+
+  it('opening Manage preferences (not yet Save) still writes nothing', async () => {
+    const { container, unmount, settle } = await renderSection(<CookieConsent />, shopWith({ enabled: true, mode: 'OPT_IN' }))
+    await settle()
+    const manageBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Manage preferences')
+    act(() => manageBtn!.click())
+    expect(localStorage.getItem('tq-cookie-consent')).toBeNull()
+    unmount()
+  })
+
+  it('setConsent appears in source exactly once, and only inside decide() — the three buttons’ own handler', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+    const src = readFileSync(join(process.cwd(), 'components/CookieConsent.tsx'), 'utf8')
+    const calls = src.match(/\bsetConsent\(/g) || []
+    expect(calls.length).toBe(1)
+    const decideBody = src.slice(src.indexOf('const decide ='), src.indexOf('const position ='))
+    expect(decideBody).toMatch(/setConsent\(/)
+  })
+})
