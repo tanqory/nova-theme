@@ -117,7 +117,11 @@ export function CookieConsent(): JSX.Element | null {
             <button type="button" className="btn btn--ghost" onClick={() => setManaging(true)}>
               {cfg.manageLabel || 'Manage preferences'}
             </button>
-            <button type="button" className="btn btn--ghost" onClick={() => decide(false, false)}>
+            {/* Accept and Decline carry EQUAL visual weight (Legal, EU/UK banner review) — both a
+                real button, same size and contrast, neither reading as the "real" choice next to a
+                lesser one. `btn--secondary` (not `btn--ghost`) is the approved equal-weight variant;
+                only Manage preferences stays deliberately secondary. */}
+            <button type="button" className="btn btn--secondary" onClick={() => decide(false, false)}>
               {cfg.declineLabel || 'Decline'}
             </button>
             <button type="button" className="btn btn--primary" onClick={() => decide(true, true)}>
