@@ -133,6 +133,34 @@ describe('the URL is canonical on the storefront', () => {
   })
 })
 
+describe('?variant= preselects the variant (feed and share links land on the variant they name)', () => {
+  const render = async (search: string) => {
+    setUrl('/products/tee', search)
+    const data = stubData({
+      collections: [{ handle: 'all', title: 'All', products: [product('tee')] }],
+      details: { tee: optioned() },
+    })
+    const h = await renderSection(<ProductDetails attributes={{}} />, data)
+    await h.settle()
+    return h
+  }
+
+  it('a known variant id is selected, even when it is sold out (the page agrees with the feed)', async () => {
+    const h = await render('?variant=gid://variant/black-xl')
+    expect(buyButton(h.container)?.textContent).toMatch(/sold out|unavailable/i)
+    expect(buyButton(h.container)?.disabled).toBe(true)
+    h.unmount()
+  })
+
+  it('NEGATIVE CONTROL: an unknown or empty variant id falls back to the first available variant', async () => {
+    for (const search of ['?variant=nope', '?variant=', '']) {
+      const h = await render(search)
+      expect(buyButton(h.container)?.disabled).toBe(false)
+      h.unmount()
+    }
+  })
+})
+
 describe('variant selection', () => {
   it('refuses to sell a combination that has no variant', async () => {
     setUrl('/products/tee')

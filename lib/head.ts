@@ -14,6 +14,7 @@
  */
 import type { DataApi } from './tanqory/index'
 import { matchRoute } from './routes.ts'
+import { productJsonLd, serializeJsonLd, type JsonLd } from './structured-data.ts'
 
 /** Build a HeadMeta from a resource's SEO (shared by blog/article, which resolve
  *  their SEO asynchronously rather than from the sync bootstrap). */
@@ -55,6 +56,8 @@ export interface HeadMeta {
   siteName: string
   /** Absolute URL for the favicon / tab icon (square brand mark). */
   favicon: string
+  /** schema.org JSON-LD for the page (a Product on product routes), or null. */
+  jsonLd?: JsonLd | null
 }
 
 /** Resolve a possibly-relative asset URL to an absolute one, against the
@@ -70,6 +73,8 @@ export function computeHead(
   pathname: string,
   data: DataApi,
   settings: { shopName?: unknown },
+  /** The request origin on the server render; the browser origin when omitted. */
+  origin?: string,
 ): HeadMeta {
   const shop = data.shop as
     | {
@@ -91,6 +96,8 @@ export function computeHead(
   let keywords: string[] = []
   let image: string | undefined
   let type = 'website'
+  let jsonLd: JsonLd | null = null
+  const pageOrigin = origin ?? (typeof window === 'undefined' ? '' : window.location.origin)
   const route = matchRoute(pathname)
   const isDetail = {
     pg: route.resource === 'page' ? route.handle : undefined,
@@ -103,6 +110,10 @@ export function computeHead(
       | undefined
     seoTitle = r?.seo?.title; rawTitle = r?.title; description = r?.seo?.description; keywords = r?.seo?.keywords ?? []
     image = r?.featuredImage?.url; type = 'product'
+    jsonLd = productJsonLd(data.productByHandle(isDetail.pr) ?? null, {
+      url: pageOrigin ? `${pageOrigin}${pathname}` : pathname,
+      origin: pageOrigin,
+    })
   } else if (isDetail.co) {
     const r = data.collectionByHandle(isDetail.co) as
       | { seo?: { title?: string | null; description?: string | null; keywords?: string[] }; title?: string; image?: { url?: string } | null }
@@ -129,6 +140,7 @@ export function computeHead(
     // The square brand mark makes the best favicon / tab icon; fall back to the
     // primary logo. Also previously SAVED_ONLY.
     favicon: absUrl(shop?.brand?.squareLogo?.url || shop?.brand?.logo?.url),
+    jsonLd,
   }
 }
 
@@ -142,7 +154,7 @@ export function computeHead(
  * correct canonical for that page); forcing canonical to a configured primary
  * domain when a shopper is on a different host is the store-api#558 follow-up.
  */
-export function applyHead({ title, description, keywords, image, type, siteName, favicon }: HeadMeta): void {
+export function applyHead({ title, description, keywords, image, type, siteName, favicon, jsonLd }: HeadMeta): void {
   if (typeof document === 'undefined') return
   const head = document.head
   if (title) document.title = title
@@ -208,6 +220,19 @@ export function applyHead({ title, description, keywords, image, type, siteName,
   meta('twitter:title', title)
   meta('twitter:description', description)
   meta('twitter:image', image)
+
+  // JSON-LD: written for a product, removed on the next route that has none (soft navigation must not leave the
+  // previous product's structured data behind). Same ownership rule as the other tags.
+  const ld = head.querySelector('script[type="application/ld+json"][data-tq-head="true"]')
+  if (jsonLd) {
+    const el = ld ?? document.createElement('script')
+    el.setAttribute('type', 'application/ld+json')
+    el.setAttribute('data-tq-head', 'true')
+    el.textContent = serializeJsonLd(jsonLd)
+    if (!ld) head.appendChild(el)
+  } else if (ld) {
+    ld.remove()
+  }
 
   if (favicon) {
     upsert(

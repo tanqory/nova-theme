@@ -16,6 +16,7 @@ import { ProductGallery } from '../components/ProductGallery'
 import { VariantPicker, InventoryStatus } from '../components/VariantPicker'
 import { Breadcrumb } from '../components/Disclosure'
 import { Button } from '../components/Button'
+import { NotifyMe } from '../components/NotifyMe'
 import { QuantityStepper } from '../components/QuantityStepper'
 import { openOverlay } from '../components/useOverlayChannel'
 import { ProductProvider, type ProductContextValue } from '../components/product-context'
@@ -245,7 +246,14 @@ export function ProductDetails({ attributes, children }: SectionProps): JSX.Elem
   const variants = useMemo(() => product?.variants ?? [], [product])
 
   useEffect(() => {
-    const seed = variants.find((v) => v.availableForSale) ?? variants[0]
+    // `?variant=<id>` (feed and share links) names the variant to open on, sold out or not: the page must agree with
+    // the feed row it was reached from. Anything unknown falls back to the first available variant.
+    const requested =
+      typeof window === 'undefined' ? '' : (new URLSearchParams(window.location.search).get('variant') ?? '').trim()
+    const seed =
+      (requested ? variants.find((v) => v.id === requested) : undefined) ??
+      variants.find((v) => v.availableForSale) ??
+      variants[0]
     if (seed?.selectedOptions?.length) {
       setSelected(Object.fromEntries(seed.selectedOptions.map((o) => [o.name, o.value])))
     }
@@ -370,6 +378,18 @@ export function ProductDetails({ attributes, children }: SectionProps): JSX.Elem
       : undefined
 
   const soldOut = purchase.state === 'unavailable'
+  // The concrete variant a shopper can ask to be told about: a real variant that exists and is out of stock
+  // (never a combination that does not exist, and never while variants are still loading).
+  const notifyVariantId: string | undefined =
+    purchase.state === 'unavailable'
+      ? selectedVariant
+        ? selectedVariant.availableForSale === false
+          ? selectedVariant.id
+          : undefined
+        : !hasOptions && product.availableForSale === false
+          ? product.variantId
+          : undefined
+      : undefined
 
   // Stock copy follows the theme's language; a merchant's own label is shown as written.
   const buttonLabel = localizedCopy(attributes.buttonLabel, 'Add to cart', 'product.addToCart', t)
@@ -563,6 +583,7 @@ export function ProductDetails({ attributes, children }: SectionProps): JSX.Elem
                   fullWidth
                 />
               </div>
+              {notifyVariantId && <NotifyMe variantId={notifyVariantId} />}
               <InventoryStatus
                 available={!soldOut}
                 {...(typeof selectedVariant?.inventoryQuantity === 'number'

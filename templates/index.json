@@ -398,9 +398,7 @@
         {
           "type": "payment-icons",
           "id": "b-payment-icons-23",
-          "settings": {
-            "methods": "VISA, Mastercard, Amex, PayPal, Apple Pay"
-          }
+          "settings": {}
         }
       ]
     },
@@ -608,9 +606,7 @@
             {
               "type": "payment-icons",
               "id": "b-payment-icons-37",
-              "settings": {
-                "methods": "VISA, Mastercard, Amex, PayPal, Apple Pay"
-              }
+              "settings": {}
             },
             {
               "type": "newsletter",

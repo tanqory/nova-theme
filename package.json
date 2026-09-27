@@ -19,7 +19,7 @@
     "test:watch": "vitest",
     "manifest": "node --experimental-strip-types scripts/gen-manifest.mjs",
     "manifest:check": "node --experimental-strip-types scripts/gen-manifest.mjs --check",
-    "verify": "pnpm typecheck && pnpm manifest:check && pnpm check:spec && pnpm check:inert && pnpm check:design && pnpm check:headings && pnpm test && pnpm build",
+    "verify": "pnpm typecheck && pnpm manifest:check && pnpm check:spec && pnpm check:inert && pnpm check:design && pnpm check:headings && pnpm test && pnpm build && pnpm check:jsonld",
     "prebuild": "node --experimental-strip-types scripts/gen-manifest.mjs",
     "check:inert": "node scripts/check-inert-settings.mjs",
     "check:design": "node scripts/check-design-coverage.mjs",
@@ -28,7 +28,8 @@
     "verify:live": "pnpm check:a11y && pnpm check:layout",
     "check:layout": "node scripts/check-layout-sanity.mjs",
     "check:spec": "node scripts/extract-design-spec.mjs",
-    "check": "node scripts/theme-spec/check.mjs ."
+    "check": "node scripts/theme-spec/check.mjs .",
+    "check:jsonld": "node scripts/check-product-jsonld.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

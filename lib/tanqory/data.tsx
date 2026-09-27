@@ -303,6 +303,18 @@ export interface DataApi extends StorefrontExtensions {
       code: string | null
     }>
   >
+  /**
+   * "Notify me when it's back": ask store-api to email `email` ONCE when a sold-out variant is available
+   * again. `available` = it is in stock right now (nothing stored). Resolves for both; rejects on a
+   * transport/HTTP failure so the form can say so. The address is used for this one email only — there is
+   * no marketing opt-in on this path.
+   */
+  notifyBackInStock?: (input: {
+    variantId: string
+    email: string
+    locale?: string
+    country?: string
+  }) => Promise<'subscribed' | 'available'>
   /** Physical store locations (Settings → Locations) for a store-locator. */
   locations?: () => Promise<
     Array<{
@@ -605,6 +617,7 @@ export function createMockData(collections: Collection[]): DataApi {
     shop,
     menu: (handle) => menus.get(handle) ?? menus.get(decodeHandle(handle)) ?? null,
     fetchMenu: async (handle) => menus.get(handle) ?? menus.get(decodeHandle(handle)) ?? null,
+    notifyBackInStock: async () => 'subscribed',
     listMenus: async () =>
       Array.from(menus.values()).map((m) => ({
         handle: m.handle,
@@ -1504,6 +1517,30 @@ function buildLiveData(
       menus: Array<{ handle: string; title: string; itemsCount: number }>
     }>(`query NovaMenus { menus { handle title itemsCount } }`)
     return res?.menus ?? []
+  }
+  data.notifyBackInStock = async (input) => {
+    const f: typeof fetch | undefined = opts.fetcher ?? (globalThis.fetch as typeof fetch | undefined)
+    if (!f) throw new Error('[theme-kit] notifyBackInStock: fetch is not available')
+    const res = await f(
+      `${opts.endpoint.replace(/\/$/, '')}/api/v1/stores/${encodeURIComponent(opts.storeId)}/storefront/back-in-stock`,
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(opts.token ? { 'x-publishable-key': opts.token } : {}),
+        },
+        body: JSON.stringify({
+          // store-api wants the bare UUID; tolerate a `gid://…/<uuid>` form
+          variantId: input.variantId.split('/').pop(),
+          email: input.email,
+          ...(input.locale ? { locale: input.locale } : {}),
+          ...(input.country ? { country: input.country.toUpperCase() } : {}),
+        }),
+      },
+    )
+    if (!res.ok) throw new Error(`[theme-kit] notify-me HTTP ${res.status}`)
+    const json = (await res.json().catch(() => ({}))) as { status?: string }
+    return json.status === 'available' ? 'available' : 'subscribed'
   }
   data.pixels = async () => {
     const res = await graphqlRequest<{

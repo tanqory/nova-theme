@@ -15,6 +15,7 @@
 import { renderSectionPreviewHTML, renderStorefrontHTML } from './lib/tanqory/ssg'
 import { createLiveData, createMockData, type DataApi } from './lib/tanqory/index'
 import { computeHead } from './lib/head'
+import { jsonLdTag } from './lib/structured-data'
 import { detailHandles, matchRoute, resolvePageTemplate } from './lib/routes'
 import { localeStrings, themeLocaleOf } from './lib/theme-locale'
 import { fontStylesheetHref, resolveThemeVars, themeSettingsCss } from './lib/theme-settings'
@@ -177,6 +178,8 @@ function document(opts: { lang: string; head: ReturnType<typeof computeHead>; bo
     head.image ? `<meta property="og:image" content="${esc(head.image)}">` : '',
     head.type ? `<meta property="og:type" content="${esc(head.type)}">` : '',
     head.siteName ? `<meta property="og:site_name" content="${esc(head.siteName)}">` : '',
+    // schema.org Product/Offer for search and AI answer engines — in the server HTML, because crawlers do not run JS.
+    jsonLdTag(head.jsonLd),
   ].filter(Boolean).join('\n    ')
   const json = (v: unknown) => JSON.stringify(v).replace(/</g, '\\u003c')
   return `<!doctype html>
@@ -197,6 +200,9 @@ function document(opts: { lang: string; head: ReturnType<typeof computeHead>; bo
   </body>
 </html>`
 }
+
+/** Exported for tests: the server document shell (head tags included). */
+export { document as renderDocument }
 
 /** Spec v1: one request → one Response. */
 export async function render(request: Request, ctx: Ctx): Promise<Response> {
@@ -234,7 +240,7 @@ export async function render(request: Request, ctx: Ctx): Promise<Response> {
     ? 'public, max-age=0, s-maxage=60'
     : 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800'
   const body = renderStorefrontHTML({ sections, pages, groups, shell, data, settings, locale, page })
-  const head = computeHead(url.pathname, data, settings as { shopName?: string })
+  const head = computeHead(url.pathname, data, settings as { shopName?: string }, url.origin)
   const state = live && data.getSnapshot ? { page, bootstrap: data.getSnapshot() } : null
   const html = document({ lang, head, body, state, content, assets: assetTags(ctx), mode: 'serve' })
   return new Response(html, {
