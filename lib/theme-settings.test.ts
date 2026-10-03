@@ -151,12 +151,12 @@ test('fonts: theme setting per role, else Settings → Brand fonts, with a fitti
 
   assert.equal(
     fontStylesheetHref({ fontHeading: 'Playfair Display', fontBody: 'Inter' }),
-    'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap',
+    '/_tq/fonts/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap',
   )
   // One family used for both roles is requested once.
   assert.equal(
     fontStylesheetHref({ fontHeading: 'Kanit', fontBody: 'Kanit' }),
-    'https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&display=swap',
+    '/_tq/fonts/css2?family=Kanit:wght@400;500;600;700&display=swap',
   )
 })
 
@@ -263,4 +263,12 @@ test('behaviour switches come back as root data-* flags, and only well-formed on
   )
   assert.deepEqual(resolveRootFlags({ cardHoverEffect: '"><script>', badgeStyle: '' }), {})
   assert.deepEqual(resolveRootFlags(scaffold).cardHover, (scaffold as Record<string, unknown>).cardHoverEffect)
+})
+
+test('fonts: no Google host is referenced before consent (B6, first-party /_tq/fonts)', async () => {
+  const { readFileSync } = await import('node:fs')
+  for (const f of ['index.html', 'entry.ts', 'lib/theme-settings.ts']) {
+    const src = readFileSync(new URL(`../${f}`, import.meta.url), 'utf8')
+    assert.doesNotMatch(src, /fonts\.(googleapis|gstatic)\.com/, `${f} must not reference a Google font host`)
+  }
 })

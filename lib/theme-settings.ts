@@ -509,7 +509,7 @@ export function themeSettingsCss(vars: Record<string, string>): string {
   return body ? `:root{${body}}` : ''
 }
 
-/** Google Fonts stylesheet for the resolved families, or null when none are set. */
+/** First-party (/_tq/fonts proxy, B6) Google Fonts stylesheet for the resolved families, or null when none are set. */
 export function fontStylesheetHref(settings: ThemeSettings, brand?: BrandFallback | null): string | null {
   const { heading, body } = resolveFonts(settings, brand)
   const families = Array.from(new Set([heading, body].filter((f): f is string => !!f)))
@@ -517,7 +517,7 @@ export function fontStylesheetHref(settings: ThemeSettings, brand?: BrandFallbac
   const query = families
     .map((f) => `family=${encodeURIComponent(f).replace(/%20/g, '+')}:wght@400;500;600;700`)
     .join('&')
-  return `https://fonts.googleapis.com/css2?${query}&display=swap`
+  return `/_tq/fonts/css2?${query}&display=swap`
 }
 
 /**

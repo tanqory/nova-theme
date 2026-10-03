@@ -189,9 +189,7 @@ function document(opts: { lang: string; head: ReturnType<typeof computeHead>; bo
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${esc(head.title)}</title>
     ${meta}
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="/_tq/fonts/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
     ${opts.assets}
   </head>
   <body data-tq-mode="${esc(opts.mode)}">
