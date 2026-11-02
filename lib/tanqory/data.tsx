@@ -683,7 +683,7 @@ export function createMockData(collections: Collection[]): DataApi {
  * Live data source backed by the Tanqory Storefront GraphQL API.
  *
  *   const data = await createLiveData({
- *     endpoint: 'https://api-do-sgp1.tanqory.com',
+ *     endpoint: 'https://api.tanqory.com',
  *     storeId:  '<store-uuid>',
  *     token:    '<publishable-storefront-token>',
  *     prefetch: { collectionLimit: 20, productLimitPerCollection: 24 },
@@ -700,7 +700,7 @@ export function createMockData(collections: Collection[]): DataApi {
  * `prefetch.productLimitPerCollection` to cover the catalogue size.
  */
 export interface LiveDataOptions {
-  /** Base URL of the store-api (e.g. https://api-do-sgp1.tanqory.com). */
+  /** Base URL of the store API (e.g. https://api.tanqory.com — the router sends /api/v1/stores/<id>/… to the store's cell). */
   endpoint: string
   /** Store UUID (the `:storeId` path param). */
   storeId: string

@@ -158,7 +158,7 @@ export default defineConfig(({ mode }) => {
       // Accept any ingress host (e.g. <slug>.mytanqory.com).
       allowedHosts: true,
       // HMR is disabled in the sandbox: the storefront runs behind the studio
-      // router + Knative ingress, where vite's HMR WebSocket can't reach the pod
+      // router ingress, where vite's HMR WebSocket can't reach the pod
       // (browser tried wss://localhost:8080 and wss://<slug>.mytanqory.com → fail,
       // noisy console error). We don't need HMR here — live edits reach the canvas
       // via the editor's postMessage PreviewBridge, and saved edits apply on the

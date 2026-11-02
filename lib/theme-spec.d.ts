@@ -14,7 +14,7 @@ export interface RenderContext {
   mode: 'serve' | 'preview'
   store: {
     id: string
-    /** Storefront GraphQL base, e.g. https://api-do-sgp1.tanqory.dev (theme calls it itself). */
+    /** Storefront GraphQL base, e.g. https://api.tanqory.dev (theme calls it itself). */
     apiBase: string
     /** Publishable storefront token, when the store has one. */
     token?: string
