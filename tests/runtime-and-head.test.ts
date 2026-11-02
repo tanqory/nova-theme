@@ -27,7 +27,7 @@ describe('mock data is never a production fallback', () => {
   })
 
   it('is NOT allowed on a configured storefront', () => {
-    vi.stubEnv('VITE_TANQORY_BACKEND', 'https://api-do-sgp1.tanqory.com')
+    vi.stubEnv('VITE_TANQORY_BACKEND', 'https://api.tanqory.com')
     vi.stubEnv('VITE_TANQORY_STORE_ID', '00000000-0000-0000-0000-000000000001')
     expect(isConfiguredForLiveData()).toBe(true)
     // This is the fix for "API error shows Example product · $99 on a real
@@ -36,7 +36,7 @@ describe('mock data is never a production fallback', () => {
   })
 
   it('is allowed inside the editor preview even on a configured build', () => {
-    vi.stubEnv('VITE_TANQORY_BACKEND', 'https://api-do-sgp1.tanqory.com')
+    vi.stubEnv('VITE_TANQORY_BACKEND', 'https://api.tanqory.com')
     vi.stubEnv('VITE_TANQORY_STORE_ID', '00000000-0000-0000-0000-000000000001')
     setUrl('/', '?preview=1')
     expect(isEditorPreview()).toBe(true)

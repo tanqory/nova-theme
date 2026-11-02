@@ -1,8 +1,8 @@
 // Theme entry — picks the page template from window.location.pathname AND
 // chooses live vs mock data based on Vite build-time env vars:
 //
-//   VITE_TANQORY_BACKEND          → https://api-do-sgp1.tanqory.com (prod)
-//                                   https://dev-api-do-sgp1.tanqory.com (dev)
+//   VITE_TANQORY_BACKEND          → https://api.tanqory.com (prod)
+//                                   https://api.tanqory.dev (dev)
 //   VITE_TANQORY_STORE_ID         → the store's UUID
 //   VITE_TANQORY_STOREFRONT_TOKEN → publishable storefront key (safe to ship)
 //

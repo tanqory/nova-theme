@@ -18,8 +18,7 @@
 /** Studio origins allowed to drive the canvas when the theme configures none. */
 export const DEFAULT_STUDIO_ORIGINS: readonly string[] = [
   'https://studio.tanqory.com',
-  'https://studio-central.tanqory.com',
-  'https://studio-do-sgp1.tanqory.dev',
+  'https://studio.tanqory.dev',
 ]
 
 const LOOPBACK_HOST = /^(?:localhost|127\.0\.0\.1|\[::1\]|(?:[a-z0-9-]+\.)+localhost)$/i

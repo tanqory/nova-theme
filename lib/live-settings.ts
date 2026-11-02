@@ -33,13 +33,12 @@ export const LIVE_SETTINGS_MESSAGE = 'tq:theme-settings'
 
 /**
  * Studio origins allowed to drive the live preview when nothing is configured:
- * the studio app (prod), the central editor host the merchant dashboard links
- * to (prod), and the dev editor host.
+ * the studio app on Prod and on Dev. The cell- and central-named editor hosts
+ * (studio-central, studio-do-sgp1) are retired (INFRA_STANDARD §2.2).
  */
 export const DEFAULT_STUDIO_ORIGINS: readonly string[] = [
   'https://studio.tanqory.com',
-  'https://studio-central.tanqory.com',
-  'https://studio-do-sgp1.tanqory.dev',
+  'https://studio.tanqory.dev',
 ]
 
 /** Added on dev builds only: studio-app's local Vite server. */
